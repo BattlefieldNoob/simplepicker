@@ -7,7 +7,7 @@ export const monthTracker: MonthTracker = {
   years: {}
 };
 
-export const months = [
+const enMonths = [
   'January',
   'February',
   'March',
@@ -22,7 +22,38 @@ export const months = [
   'December'
 ];
 
-export const days = [
+const itMonths = [
+  'Gennaio',
+  'Febbraio',
+  'Marzo',
+  'Aprile',
+  'Maggio',
+  'Giugno',
+  'Luglio',
+  'Agosto',
+  'Settembre',
+  'Ottobre',
+  'Novembre',
+  'Dicembre'
+];
+
+export function months(lang: string) {
+  if (lang === 'it') {
+    return itMonths;
+  }
+
+  return enMonths;
+}
+
+export function indexOfMonth(month: string) {
+  let index = enMonths.indexOf(month);
+  if (index === -1) {
+    index = itMonths.indexOf(month);
+  }
+  return index;
+}
+
+const enDays = [
   'Sunday',
   'Monday',
   'Tuesday',
@@ -31,6 +62,24 @@ export const days = [
   'Friday',
   'Saturday'
 ];
+
+const itDays = [
+  'Domenica',
+  'Lunedi',
+  'Martedi',
+  'Mercoledi',
+  'Giovedi',
+  'Venerdi',
+  'Sabato'
+];
+
+export function days(lang: string) {
+  if (lang === 'it') {
+    return itDays;
+  }
+
+  return enDays;
+}
 
 function fill<T>(arr: T[], upto: number): T[] {
   const temp: T[] = [];
@@ -127,8 +176,11 @@ const dateEndings = {
   rd: [3, 23]
 };
 
-export function getDisplayDate(_date) {
+export function getDisplayDate(lang, _date) {
   const date = _date.getDate();
+  if(lang === 'it') {
+    return date;
+  }
   if (dateEndings.st.indexOf(date) !== -1) {
     return date + 'st';
   }
@@ -144,23 +196,24 @@ export function getDisplayDate(_date) {
   return date + 'th';
 }
 
-export function formatTimeFromInputElement(input: string) {
+export function formatTimeFromInputElement(hour: number) {
   let timeString = '';
-  type StringOrNumberTuple = [string | number, string | number];
-  let [ hour, minute ] = input.split(':') as StringOrNumberTuple;
-  hour = +hour;
-
-  const isPM = hour >= 12;
-  if (isPM && hour > 12) {
-    hour = hour - 12;
-  }
-
-  if (!isPM && hour === 0) {
-    hour = 12;
-  }
-
+  const minute = "00";
   timeString += hour < 10 ? '0' + hour : hour;
-  timeString += ':' + minute + ' ';
-  timeString += isPM ? 'PM' : 'AM';
+  timeString += ':' + minute;
   return timeString;
+}
+
+export function formatDate(date) {
+  var d = new Date(date),
+      month = '' + (d.getMonth() + 1),
+      day = '' + d.getDate(),
+      year = d.getFullYear();
+
+  if (month.length < 2) 
+      month = '0' + month;
+  if (day.length < 2) 
+      day = '0' + day;
+
+  return [year, month, day].join('-');
 }

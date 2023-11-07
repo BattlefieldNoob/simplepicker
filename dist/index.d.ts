@@ -28,10 +28,13 @@ declare class SimplePicker {
     private $day;
     private $time;
     private $timeInput;
+    private $hourIncrement;
+    private $hourDecrement;
     private $timeSectionIcon;
     private $cancel;
     private $ok;
     private $displayDateElements;
+    private lang;
     constructor(arg1?: HTMLElement | string | SimplePickerOpts, arg2?: SimplePickerOpts);
     initElMethod(el: any): void;
     init(el: HTMLElement, opts: SimplePickerOpts): void;
@@ -47,6 +50,8 @@ declare class SimplePicker {
     selectDateElement(el: HTMLElement): void;
     findElementWithDate(date: any, returnLastIfNotFound?: boolean): any;
     handleIconButtonClick(el: HTMLElement): void;
+    incrementHour(): void;
+    decrementHour(): void;
     initListeners(): void;
     callEvent(event: SimplePickerEvent, dispatcher: (a: HandlerFunction) => void): void;
     open(): void;

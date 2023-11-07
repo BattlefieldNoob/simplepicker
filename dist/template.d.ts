@@ -1,1 +1,1 @@
-export declare const htmlTemplate: string;
+export declare function htmlTemplate(lang: string): string;

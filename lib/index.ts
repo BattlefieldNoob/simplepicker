@@ -39,11 +39,14 @@ class SimplePicker {
   private $date: HTMLElement;
   private $day: HTMLElement;
   private $time: HTMLElement;
-  private $timeInput: HTMLInputElement;
+  private $timeInput: HTMLElement;
+  private $hourIncrement: HTMLElement;
+  private $hourDecrement: HTMLElement;
   private $timeSectionIcon: HTMLElement;
   private $cancel: HTMLElement;
   private $ok: HTMLElement;
   private $displayDateElements: HTMLElement[];
+  private lang = 'it';
 
   constructor(arg1?: HTMLElement | string | SimplePickerOpts, arg2?: SimplePickerOpts) {
     let el: HTMLElement | undefined = undefined;
@@ -100,7 +103,9 @@ class SimplePicker {
     this.$date = $('.simplepicker-date');
     this.$day = $('.simplepicker-day-header');
     this.$time = $('.simplepicker-time');
-    this.$timeInput = $('.simplepicker-time-section input');
+    this.$timeInput = $('.timepicker-hour');
+    this.$hourIncrement = $('.simplepicker-time-section .glyphicon-chevron-up');
+    this.$hourDecrement = $('.simplepicker-time-section .glyphicon-chevron-down');
     this.$timeSectionIcon = $('.simplepicker-icon-time');
     this.$cancel = $('.simplepicker-cancel-btn');
     this.$ok = $('.simplepicker-ok-btn');
@@ -111,7 +116,6 @@ class SimplePicker {
       this.$date
     ];
 
-    this.$time.classList.add('simplepicker-fade');
     this.render(dateUtil.scrapeMonth(today));
 
     opts = opts || {};
@@ -140,9 +144,9 @@ class SimplePicker {
     // The timeFull variable below will be formatted as HH:mm:ss.
     // Using regular experssion we remove the :ss parts.
     const timeFull = date.toTimeString().split(" ")[0]
-    const time = timeFull.replace(/\:\d\d$/, "");
-    this.$timeInput.value = time;
-    this.$time.innerText = dateUtil.formatTimeFromInputElement(time);
+    const time = timeFull.replace(/\:\d\d:\d\d$/, ":00");
+    this.$timeInput.innerHTML = time;
+    //this.$time.innerText = dateUtil.formatTimeFromInputElement(time);
 
     const dateString = date.getDate().toString();
     const $dateEl = this.findElementWithDate(dateString);
@@ -169,7 +173,7 @@ class SimplePicker {
 
   injectTemplate(el: HTMLElement) {
     const $template = document.createElement('template');
-    $template.innerHTML = htmlTemplate;
+    $template.innerHTML = htmlTemplate(this.lang);
     el.appendChild($template.content.cloneNode(true));
   }
 
@@ -181,15 +185,15 @@ class SimplePicker {
   }
 
   updateDateComponents(date: Date) {
-    const day = dateUtil.days[date.getDay()];
-    const month = dateUtil.months[date.getMonth()];
+    const day = dateUtil.days(this.lang)[date.getDay()];
+    const month = dateUtil.months(this.lang)[date.getMonth()];
     const year = date.getFullYear();
     const monthAndYear = month + ' ' + year;
 
     this.$headerMonthAndYear.innerHTML = monthAndYear;
     this.$monthAndYear.innerHTML = monthAndYear;
     this.$day.innerHTML = day;
-    this.$date.innerHTML = dateUtil.getDisplayDate(date);
+    this.$date.innerHTML = dateUtil.getDisplayDate(this.lang, date);
   }
 
   render(data) {
@@ -198,6 +202,7 @@ class SimplePicker {
 
     this.clearRows();
     month.forEach((week, index) => {
+      if($trs[index] !== undefined){
       const $tds = $trs[index].children;
       week.forEach((day, index) => {
         const td = $tds[index];
@@ -209,6 +214,7 @@ class SimplePicker {
         td.removeAttribute('data-empty');
         td.innerHTML = day;
       });
+    };
     });
 
     const $lastRowDates = $$('table tbody tr:last-child td');
@@ -232,7 +238,7 @@ class SimplePicker {
   }
 
   updateSelectedDate(el?: HTMLElement) {
-    const { $monthAndYear, $time, $date } = this;
+    const { $monthAndYear, $timeInput } = this;
 
     let day;
     if (el) {
@@ -242,26 +248,12 @@ class SimplePicker {
     }
 
     const [ monthName, year ] = $monthAndYear.innerHTML.split(' ');
-    const month = dateUtil.months.indexOf(monthName);
-    let timeComponents = $time.innerHTML.split(':');
-    let hours = +timeComponents[0];
-    let [ minutes, meridium ] = timeComponents[1].split(' ');
+    const month = dateUtil.indexOfMonth(monthName);
 
-    if (meridium === 'AM' && hours == 12) {
-      hours = 0;
-    }
-
-    if (meridium === 'PM' && hours < 12) {
-      hours += 12;
-    }
-
-    const date = new Date(+year, +month, +day, +hours, +minutes);
+    const [ hour ] = $timeInput.innerHTML.split(':');
+    const date = new Date(+year, +month, +day, +hour, 0);
     this.selectedDate = date;
-
-    let _date = day + ' ';
-    _date += $monthAndYear.innerHTML.trim() + ' ';
-    _date += $time.innerHTML.trim();
-    this.readableDate = _date.replace(/^\d+/, date.getDate().toString());
+    this.readableDate = dateUtil.formatDate(date) + ' ' + hour + ':00';
   }
 
   selectDateElement(el: HTMLElement) {
@@ -351,6 +343,34 @@ class SimplePicker {
     }
   }
 
+  incrementHour() {
+    const { $timeInput } = this;
+    const _this = this;
+    const currentHour = parseInt($timeInput.innerText.split(':')[0]);
+    if (currentHour === 23) {
+      $timeInput.innerText = '00:00';
+      _this.updateSelectedDate();
+      return;
+    }
+
+    $timeInput.innerText = dateUtil.formatTimeFromInputElement(currentHour + 1);
+    _this.updateSelectedDate();
+  }
+
+  decrementHour() {
+    const { $timeInput } = this;
+    const _this = this;
+    const currentHour = parseInt($timeInput.innerText.split(':')[0]);
+    if (currentHour === 0) {
+      $timeInput.innerText = '23:00';
+      _this.updateSelectedDate();
+      return;
+    }
+
+    $timeInput.innerText = dateUtil.formatTimeFromInputElement(currentHour - 1);
+    _this.updateSelectedDate();
+  }
+
   initListeners() {
     const {
       $simplepicker, $timeInput,
@@ -374,15 +394,9 @@ class SimplePicker {
       }
     });
 
-    $timeInput.addEventListener('input', (e: any) => {
-      if (e.target.value === '') {
-        return;
-      }
+    this.$hourIncrement.addEventListener('click', this.incrementHour.bind(this));
+    this.$hourDecrement.addEventListener('click', this.decrementHour.bind(this));
 
-      const formattedTime = dateUtil.formatTimeFromInputElement(e.target.value);
-      _this.$time.innerHTML = formattedTime;
-      _this.updateSelectedDate();
-    });
 
     $ok.addEventListener('click', function () {
       _this.close();
