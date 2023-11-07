@@ -7,6 +7,7 @@ interface SimplePickerOpts {
   compactMode?: boolean;
   disableTimeSection?: boolean;
   selectedDate?: Date;
+  lang?: string;
 }
 
 const validListeners = [
@@ -73,6 +74,7 @@ class SimplePicker {
       opts = {};
     }
 
+
     this.selectedDate = new Date();
     this.injectTemplate(el);
     this.init(el, opts);
@@ -115,6 +117,12 @@ class SimplePicker {
       this.$headerMonthAndYear,
       this.$date
     ];
+
+    if (opts.lang) {
+      this.lang = opts.lang;
+    } else {
+      this.lang = 'en';
+    }
 
     this.render(dateUtil.scrapeMonth(today));
 
